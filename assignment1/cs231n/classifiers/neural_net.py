@@ -79,14 +79,17 @@ class TwoLayerNet(object):
         # shape (N, C).                                                             #
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-        pass
+        z1 = X.dot(W1) + b1
+        h1 = np.maximum(0, z1)
+        score = h1.dot(W2) + b2
+        exp_score = np.exp(score)
+        probability = exp_score / np.sum(exp_score, axis=1, keepdims=True)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
         # If the targets are not given then jump out, we're done
         if y is None:
-            return scores
+            return score
 
         # Compute the loss
         loss = None
@@ -97,8 +100,13 @@ class TwoLayerNet(object):
         # classifier loss.                                                          #
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        num_train = X.shape[0]
+        loss = np.sum(-np.log(probability[np.arange(num_train), y]))
+        loss /= num_train
 
-        pass
+        # regularization
+        loss += reg * np.sum(W1 * W1)
+        loss += reg * np.sum(W2 * W2)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
