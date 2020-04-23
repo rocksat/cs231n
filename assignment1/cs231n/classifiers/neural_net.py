@@ -118,8 +118,26 @@ class TwoLayerNet(object):
         # grads['W1'] should store the gradient on W1, and be a matrix of same size #
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        one_hot_y = np.zeros_like(probability)
+        one_hot_y[np.arange(num_train), y] = 1
+        dscore = probability - one_hot_y
 
-        pass
+        dW2 = h1.T.dot(dscore)
+        db2 = np.sum(dscore, axis=0)
+
+        dh1 = dscore.dot(W2.T)
+        dz1 = dh1 * np.where(z1 > 0, 1, 0)
+
+        dW1 = X.T.dot(dz1)
+        db1 = np.sum(dz1, axis=0)
+
+        for dX in [dW2, db2, dW1, db1]:
+            dX /= num_train
+
+        dW2 += 2 * reg * W2
+        dW1 += 2 * reg * W1
+
+        grads = {'W2': dW2, 'b2': db2, 'W1': dW1, 'b1': db1}
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
