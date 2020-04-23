@@ -36,14 +36,24 @@ def softmax_loss_naive(W, X, y, reg):
     num_train = X.shape[0]
     num_classes = W.shape[1]
 
+    # convert y to one-hot matrix
+    one_hot_y = np.zeros((num_train, num_classes))
+    one_hot_y[np.arange(num_train), y] = 1
+
     for i in range(num_train):
         score = X[i, :].dot(W)
         exp_score = np.exp(score)
         norm_score = exp_score / np.sum(exp_score)
         loss += -np.log(norm_score[y[i]])
+        dO = norm_score - one_hot_y[i:i + 1, :]
+        dW += X[i:i + 1, :].T.dot(dO)
 
     loss /= num_train
+    dW /= num_train
+
+    # regularization
     loss += reg * np.sum(W * W)
+    dW += 2 * reg * W
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
