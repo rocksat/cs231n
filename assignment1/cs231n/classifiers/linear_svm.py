@@ -106,10 +106,11 @@ def svm_loss_vectorized(W, X, y, reg):
     # loss.                                                                     #
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-    count = np.sum(margin > 0, axis=1)
-
-    # for correct class
-    # dW[:, y] -=
+    count_mat = np.where(margin > 0, 1, 0)
+    count_mat[np.arange(num_train), y] = -np.sum(margin > 0, axis=1)
+    dW = X.T.dot(count_mat)
+    dW /= num_train
+    dW += 2 * reg * np.sum(W)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
