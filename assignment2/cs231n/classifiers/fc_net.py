@@ -21,14 +21,13 @@ class TwoLayerNet(object):
     The learnable parameters of the model are stored in the dictionary
     self.params that maps parameter names to numpy arrays.
     """
-
     def __init__(
-        self,
-        input_dim=3 * 32 * 32,
-        hidden_dim=100,
-        num_classes=10,
-        weight_scale=1e-3,
-        reg=0.0,
+            self,
+            input_dim=3 * 32 * 32,
+            hidden_dim=100,
+            num_classes=10,
+            weight_scale=1e-3,
+            reg=0.0,
     ):
         """
         Initialize a new network.
@@ -54,8 +53,15 @@ class TwoLayerNet(object):
         # weights and biases using the keys 'W2' and 'b2'.                         #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        W1 = np.random.randn(input_dim, hidden_dim) * weight_scale
+        b1 = np.zeros(hidden_dim)
+        W2 = np.random.randn(hidden_dim, num_classes) * weight_scale
+        b2 = np.zeros(num_classes)
 
-        pass
+        self.params['W1'] = W1
+        self.params['b1'] = b1
+        self.params['W2'] = W2
+        self.params['b2'] = b2
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -87,8 +93,14 @@ class TwoLayerNet(object):
         # class scores for X and storing them in the scores variable.              #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        W1 = self.params['W1']
+        b1 = self.params['b1']
+        W2 = self.params['W2']
+        b2 = self.params['b2']
 
-        pass
+        h1, h1_cache = affine_forward(X, W1, b1)
+        h1_relu, h1_relu_cache = relu_forward(h1)
+        scores, scores_cache = affine_forward(h1_relu, W2, b2)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -112,7 +124,24 @@ class TwoLayerNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        loss, d_loss = softmax_loss(scores, y)
+
+        # add regularization term
+        loss += 0.5 * self.reg * (np.sum(W1**2))
+        loss += 0.5 * self.reg * (np.sum(W2**2))
+
+        # backward
+        d_h1_relu, d_W2, d_b2 = affine_backward(d_loss, scores_cache)
+        d_h1 = relu_backward(d_h1_relu, h1_relu_cache)
+        d_X, d_W1, d_b1 = affine_backward(d_h1, h1_cache)
+
+        d_W1 += self.reg * W1
+        d_W2 += self.reg * W2
+
+        grads['W1'] = d_W1
+        grads['b1'] = d_b1
+        grads['W2'] = d_W2
+        grads['b2'] = d_b2
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -137,18 +166,17 @@ class FullyConnectedNet(object):
     Similar to the TwoLayerNet above, learnable parameters are stored in the
     self.params dictionary and will be learned using the Solver class.
     """
-
     def __init__(
-        self,
-        hidden_dims,
-        input_dim=3 * 32 * 32,
-        num_classes=10,
-        dropout=1,
-        normalization=None,
-        reg=0.0,
-        weight_scale=1e-2,
-        dtype=np.float32,
-        seed=None,
+            self,
+            hidden_dims,
+            input_dim=3 * 32 * 32,
+            num_classes=10,
+            dropout=1,
+            normalization=None,
+            reg=0.0,
+            weight_scale=1e-2,
+            dtype=np.float32,
+            seed=None,
     ):
         """
         Initialize a new FullyConnectedNet.
@@ -215,7 +243,9 @@ class FullyConnectedNet(object):
         # pass of the second batch normalization layer, etc.
         self.bn_params = []
         if self.normalization == "batchnorm":
-            self.bn_params = [{"mode": "train"} for i in range(self.num_layers - 1)]
+            self.bn_params = [{
+                "mode": "train"
+            } for i in range(self.num_layers - 1)]
         if self.normalization == "layernorm":
             self.bn_params = [{} for i in range(self.num_layers - 1)]
 
