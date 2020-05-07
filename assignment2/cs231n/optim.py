@@ -109,8 +109,14 @@ def rmsprop(w, dw, config=None):
     # config['cache'].                                                        #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    learning_rate = config['learning_rate']
+    decay_rate = config['decay_rate']
+    epsilon = config['epsilon']
+    cache = config['cache']
+    grad_square = decay_rate * cache + (1 - decay_rate) * dw**2
 
-    pass
+    next_w = w - learning_rate * dw / (np.sqrt(grad_square) + epsilon)
+    config['cache'] = grad_square
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
