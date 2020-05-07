@@ -220,7 +220,17 @@ class FullyConnectedNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        # modify hidden_dims
+        layer_dims = hidden_dims.copy()
+        layer_dims.insert(0, input_dim)
+        layer_dims.append(num_classes)
+
+        for idx in range(1, len(layer_dims)):
+            W = np.random.randn(layer_dims[idx - 1],
+                                layer_dims[idx]) * weight_scale
+            b = np.zeros(layer_dims[idx])
+            self.params['W' + str(idx)] = W
+            self.params['b' + str(idx)] = b
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -283,8 +293,14 @@ class FullyConnectedNet(object):
         # layer, etc.                                                              #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-        pass
+        out = X
+        caches = {}
+        for i in range(1, self.num_layers + 1):
+            W = self.params['W' + str(i)]
+            b = self.params['b' + str(i)]
+            out, cache = affine_relu_forward(out, W, b)
+            caches[i] = cache
+        scores = out
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -311,8 +327,17 @@ class FullyConnectedNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        loss, d_out = softmax_loss(scores, y)
+        for i in range(self.num_layers, 0, -1):
+            cache = caches[i]
+            d_out, dw, db = affine_relu_backward(d_out, cache)
 
+            # add regularization
+            loss += 0.5 * self.reg * np.sum(self.params['W' + str(i)]**2)
+            dw += self.reg * self.params['W' + str(i)]
+
+            grads['W' + str(i)] = dw
+            grads['b' + str(i)] = db
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
         #                             END OF YOUR CODE                             #
