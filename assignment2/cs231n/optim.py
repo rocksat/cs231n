@@ -1,5 +1,4 @@
 import numpy as np
-
 """
 This file implements various first-order update rules that are commonly used
 for training neural networks. Each update rule accepts current weights and the
@@ -69,7 +68,11 @@ def sgd_momentum(w, dw, config=None):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    learning_rate = config['learning_rate']
+    momentum = config['momentum']
+
+    v = momentum * v - learning_rate * dw
+    next_w = w + v
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
