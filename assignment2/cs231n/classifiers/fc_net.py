@@ -221,16 +221,14 @@ class FullyConnectedNet(object):
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
         # modify hidden_dims
-        layer_dims = hidden_dims.copy()
-        layer_dims.insert(0, input_dim)
-        layer_dims.append(num_classes)
+        layer_dims = np.hstack((input_dim, hidden_dims, num_classes))
 
-        for idx in range(1, len(layer_dims)):
-            W = np.random.randn(layer_dims[idx - 1],
-                                layer_dims[idx]) * weight_scale
-            b = np.zeros(layer_dims[idx])
-            self.params['W' + str(idx)] = W
-            self.params['b' + str(idx)] = b
+        for idx in range(self.num_layers):
+            W = np.random.randn(layer_dims[idx],
+                                layer_dims[idx + 1]) * weight_scale
+            b = np.zeros(layer_dims[idx + 1])
+            self.params['W' + str(idx + 1)] = W
+            self.params['b' + str(idx + 1)] = b
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -293,14 +291,20 @@ class FullyConnectedNet(object):
         # layer, etc.                                                              #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-        out = X
+        scores = X
         caches = {}
         for i in range(1, self.num_layers + 1):
-            W = self.params['W' + str(i)]
-            b = self.params['b' + str(i)]
-            out, cache = affine_relu_forward(out, W, b)
+            if i != self.num_layers:
+                scores, cache = affine_relu_forward(scores,
+                                                    self.params['W' + str(i)],
+                                                    self.params['b' + str(i)])
+            else:
+                # handle last layer separately
+                scores, cache = affine_forward(scores,
+                                               self.params['W' + str(i)],
+                                               self.params['b' + str(i)])
+
             caches[i] = cache
-        scores = out
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -330,7 +334,10 @@ class FullyConnectedNet(object):
         loss, d_out = softmax_loss(scores, y)
         for i in range(self.num_layers, 0, -1):
             cache = caches[i]
-            d_out, dw, db = affine_relu_backward(d_out, cache)
+            if i == self.num_layers:
+                d_out, dw, db = affine_backward(d_out, cache)
+            else:
+                d_out, dw, db = affine_relu_backward(d_out, cache)
 
             # add regularization
             loss += 0.5 * self.reg * np.sum(self.params['W' + str(i)]**2)
