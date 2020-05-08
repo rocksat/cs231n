@@ -630,7 +630,31 @@ def conv_forward_naive(x, w, b, conv_param):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    stride = conv_param['stride']
+    pad = conv_param['pad']
+    N, C, H, W = x.shape
+    F, _, HH, WW = w.shape
+
+    assert (H + 2 * pad - HH) % stride == 0
+    assert (W + 2 * pad - WW) % stride == 0
+    H_out = 1 + int((H + 2 * pad - HH) / stride)
+    W_out = 1 + int((W + 2 * pad - WW) / stride)
+    out = np.zeros((N, F, H_out, W_out))
+
+    for i, img in enumerate(x):
+        for f, fil in enumerate(w):
+            for y in range(H_out):
+                for x in range(W_out):
+                    # do padding
+                    padded_img = np.pad(img, [(0, 0), (pad, pad), (pad, pad)],
+                                        mode='constant')
+
+                    # compute receptive field on input image
+                    start_x = x * stride
+                    start_y = y * stride
+                    roi = padded_img[:, start_y:start_y + HH, start_x:start_x +
+                                     WW]
+                    out[i, f, y, x] = np.sum(roi * fil) + b[f]
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
