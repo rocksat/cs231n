@@ -35,18 +35,32 @@ def affine_relu_backward(dout, cache):
     return dx, dw, db
 
 
-def affine_bn_relu_forward(x, w, b, gamma, beta, bn_param):
+def affine_norm_relu_forward(x, w, b, gamma, beta, param, normalization_mode):
+    if normalization_mode == "batchnorm":
+        norm_forward = batchnorm_forward
+    elif normalization_mode == "layernorm":
+        norm_forward = layernorm_forward
+    else:
+        raise ValueError("non-supported normalitzation type")
+
     a, fc_cache = affine_forward(x, w, b)
-    bn, bn_cache = batchnorm_forward(a, gamma, beta, bn_param)
-    out, relu_cache = relu_forward(bn)
-    cache = (fc_cache, bn_cache, relu_cache)
+    a_norm, norm_cache = norm_forward(a, gamma, beta, param)
+    out, relu_cache = relu_forward(a_norm)
+    cache = (fc_cache, norm_cache, relu_cache)
     return out, cache
 
 
-def affine_bn_relu_backward(dout, cache):
-    fc_cache, bn_cache, relu_cache = cache
+def affine_norm_relu_backward(dout, cache, normalization_mode):
+    if normalization_mode == "batchnorm":
+        norm_backward = batchnorm_backward_alt
+    elif normalization_mode == "layernorm":
+        norm_backward = layernorm_backward
+    else:
+        raise ValueError("non-supported normalitzation type")
+
+    fc_cache, norm_cache, relu_cache = cache
     dbn = relu_backward(dout, relu_cache)
-    da, dgamma, dbeta = batchnorm_backward_alt(dbn, bn_cache)
+    da, dgamma, dbeta = norm_backward(dbn, norm_cache)
     dx, dw, db = affine_backward(da, fc_cache)
     return dx, dw, db, dgamma, dbeta
 

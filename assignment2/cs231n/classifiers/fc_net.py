@@ -230,7 +230,7 @@ class FullyConnectedNet(object):
             self.params['W' + str(idx + 1)] = W
             self.params['b' + str(idx + 1)] = b
 
-            if normalization == "batchnorm" and idx + 1 != self.num_layers:
+            if normalization and idx + 1 != self.num_layers:
                 gamma = np.ones(layer_dims[idx + 1])
                 beta = np.zeros(layer_dims[idx + 1])
                 self.params['gamma' + str(idx + 1)] = gamma
@@ -303,14 +303,13 @@ class FullyConnectedNet(object):
             w = self.params['W' + str(i)]
             b = self.params['b' + str(i)]
             if i != self.num_layers:
-                if self.normalization == "batchnorm":
+                if self.normalization:
                     bn_param = self.bn_params[i - 1]
                     gamma = self.params['gamma' + str(i)]
                     beta = self.params['beta' + str(i)]
-                    scores, cache = affine_bn_relu_forward(
-                        scores, w, b, gamma, beta, bn_param)
-                elif self.normalization == "layernorm":
-                    pass
+                    scores, cache = affine_norm_relu_forward(
+                        scores, w, b, gamma, beta, bn_param,
+                        self.normalization)
                 else:
                     scores, cache = affine_relu_forward(scores, w, b)
             else:
@@ -347,13 +346,11 @@ class FullyConnectedNet(object):
         for i in range(self.num_layers, 0, -1):
             cache = caches[i]
             if i != self.num_layers:
-                if self.normalization == "batchnorm":
-                    d_out, dw, db, dgamma, dbeta = affine_bn_relu_backward(
-                        d_out, cache)
+                if self.normalization:
+                    d_out, dw, db, dgamma, dbeta = affine_norm_relu_backward(
+                        d_out, cache, self.normalization)
                     grads['gamma' + str(i)] = dgamma
                     grads['beta' + str(i)] = dbeta
-                elif self.normalization == "layernorm":
-                    pass
                 else:
                     d_out, dw, db = affine_relu_backward(d_out, cache)
             else:
