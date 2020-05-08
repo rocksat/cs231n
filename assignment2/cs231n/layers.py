@@ -641,20 +641,20 @@ def conv_forward_naive(x, w, b, conv_param):
     W_out = 1 + int((W + 2 * pad - WW) / stride)
     out = np.zeros((N, F, H_out, W_out))
 
-    for i, img in enumerate(x):
+    for k, img in enumerate(x):
         for f, fil in enumerate(w):
-            for y in range(H_out):
-                for x in range(W_out):
+            for i in range(H_out):
+                for j in range(W_out):
                     # do padding
                     padded_img = np.pad(img, [(0, 0), (pad, pad), (pad, pad)],
                                         mode='constant')
 
                     # compute receptive field on input image
-                    start_x = x * stride
-                    start_y = y * stride
-                    roi = padded_img[:, start_y:start_y + HH, start_x:start_x +
+                    start_i = i * stride
+                    start_j = j * stride
+                    roi = padded_img[:, start_i:start_i + HH, start_j:start_j +
                                      WW]
-                    out[i, f, y, x] = np.sum(roi * fil) + b[f]
+                    out[k, f, i, j] = np.sum(roi * fil) + b[f]
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -683,7 +683,39 @@ def conv_backward_naive(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    # unpack cache
+    x, w, b, conv_param = cache
+    stride = conv_param['stride']
+    pad = conv_param['pad']
+
+    N, C, H, W = x.shape
+    F, _, HH, WW = w.shape
+    _, _, H_out, W_out = dout.shape
+
+    padded_dx = np.zeros((N, C, H + 2 * pad, W + 2 * pad))
+    dw = np.zeros((F, C, HH, WW))
+    db = np.zeros(F)
+
+    for k, img in enumerate(x):
+        for f, fil in enumerate(w):
+            db[f] += dout[k, f].sum()
+            for i in range(H_out):
+                for j in range(W_out):
+                    padded_img = np.pad(img, [(0, 0), (pad, pad), (pad, pad)],
+                                        mode='constant')
+
+                    # compute receptive field on input image
+                    start_i = i * stride
+                    start_j = j * stride
+                    roi = padded_img[:, start_i:start_i + HH, start_j:start_j +
+                                     WW]
+
+                    # back-propagation
+                    dw[f] += dout[k, f, i, j] * roi
+                    padded_dx[k, :, start_i:start_i + HH, start_j:start_j +
+                              WW] += dout[k, f, i, j] * fil
+
+    dx = padded_dx[:, :, pad:pad + H, pad:pad + W]
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
