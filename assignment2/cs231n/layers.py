@@ -199,14 +199,34 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         # might prove to be helpful.                                          #
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        # step 1: mean
         mean = np.mean(x, axis=0)
-        var = np.std(x, axis=0)
-        x = (x - mean) / (var + eps)
-        out = x * gamma + beta
+
+        # step 2: shift mean
+        shifted_x = x - mean
+
+        # step 3: square
+        square_shifted_x = shifted_x**2
+
+        # step 4: variance
+        var = np.mean(square_shifted_x, axis=0)
+
+        # step 5: standard deviation
+        std = np.sqrt(var + eps)
+
+        # step 6: inverse std
+        invert_std = 1 / std
+
+        # step 7: out
+        z = shifted_x * invert_std
+
+        out = z * gamma + beta
 
         # update running average
         running_mean = momentum * running_mean + (1 - momentum) * mean
         running_var = momentum * running_var + (1 - momentum) * var
+        cache = (x, gamma, beta, eps, mean, shifted_x, square_shifted_x, var,
+                 std, invert_std, z)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         #######################################################################
@@ -220,7 +240,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         # Store the result in the out variable.                               #
         #######################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-        x = (x - running_mean) / (running_var + eps)
+        x = (x - running_mean) / np.sqrt((running_var + eps))
         out = x * gamma + beta
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         #######################################################################
@@ -261,8 +281,36 @@ def batchnorm_backward(dout, cache):
     # might prove to be helpful.                                              #
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    # unpack cache
+    (x, gamma, beta, eps, mean, shifted_x, square_shifted_x, var, std,
+     invert_std, z) = cache
 
-    pass
+    N, D = x.shape
+
+    dbeta = np.sum(dout, axis=0)
+    dgamma = np.sum(dout * z, axis=0)
+    dz = dout * gamma
+
+    # step 7: z = shifted_x * invert_std
+    d_invert_std = np.sum(dz * shifted_x, axis=0)
+
+    # step 6: invert_std = 1 / std
+    d_std = d_invert_std * -1 / (std**2)
+
+    # step 5: std = np.sqrt(var + eps)
+    d_var = d_std * 0.5 * invert_std
+
+    # step 4: np.mean(square_shifted_x, axis=0)
+    d_square_shifted_x = d_var * np.ones((N, D)) / N
+
+    # step 3: square_shifted_x = shifted_x**2
+    d_shifted_x = d_square_shifted_x * (2 * shifted_x) + dz * invert_std
+
+    # step 2: shifted_x = x - mean
+    d_mean = -np.sum(d_shifted_x, axis=0)
+
+    # step 1: mean = np.mean(x, axis=0)
+    dx = d_shifted_x + d_mean * np.ones((N, D)) / N
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
