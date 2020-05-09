@@ -698,7 +698,6 @@ def conv_backward_naive(dout, cache):
 
     for k, img in enumerate(x):
         for f, fil in enumerate(w):
-            db[f] += dout[k, f].sum()
             for i in range(H_out):
                 for j in range(W_out):
                     padded_img = np.pad(img, [(0, 0), (pad, pad), (pad, pad)],
@@ -711,6 +710,7 @@ def conv_backward_naive(dout, cache):
                                      WW]
 
                     # back-propagation
+                    db[f] += dout[k, f, i, j]
                     dw[f] += dout[k, f, i, j] * roi
                     padded_dx[k, :, start_i:start_i + HH, start_j:start_j +
                               WW] += dout[k, f, i, j] * fil
@@ -749,7 +749,28 @@ def max_pool_forward_naive(x, pool_param):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    pool_height = pool_param['pool_height']
+    pool_width = pool_param['pool_width']
+    stride = pool_param['stride']
+
+    N, C, H, W = x.shape
+
+    assert (H - pool_height) % stride == 0
+    assert (W - pool_width) % stride == 0
+
+    H_out = int(1 + (H - pool_height) / stride)
+    W_out = int(1 + (W - pool_width) / stride)
+
+    out = np.zeros((N, C, H_out, W_out))
+    for i in range(H_out):
+        for j in range(W_out):
+            # receptive field
+            start_i = i * stride
+            start_j = j * stride
+            out[:, :, i, j] = np.max(
+                x[:, :, start_i:start_i + pool_height, start_j:start_j +
+                  pool_width],
+                axis=(2, 3))
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
