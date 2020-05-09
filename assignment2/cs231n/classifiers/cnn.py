@@ -16,17 +16,16 @@ class ThreeLayerConvNet(object):
     consisting of N images, each with height H and width W and with C input
     channels.
     """
-
     def __init__(
-        self,
-        input_dim=(3, 32, 32),
-        num_filters=32,
-        filter_size=7,
-        hidden_dim=100,
-        num_classes=10,
-        weight_scale=1e-3,
-        reg=0.0,
-        dtype=np.float32,
+            self,
+            input_dim=(3, 32, 32),
+            num_filters=32,
+            filter_size=7,
+            hidden_dim=100,
+            num_classes=10,
+            weight_scale=1e-3,
+            reg=0.0,
+            dtype=np.float32,
     ):
         """
         Initialize a new network.
@@ -63,7 +62,17 @@ class ThreeLayerConvNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        self.params['W1'] = np.random.randn(
+            num_filters, input_dim[0], filter_size, filter_size) * weight_scale
+        self.params['b1'] = np.zeros(num_filters)
+
+        conv_out_dim = num_filters * (input_dim[1] // 2) * (input_dim[2] // 2)
+        self.params['W2'] = np.random.randn(conv_out_dim,
+                                            hidden_dim) * weight_scale
+        self.params['b2'] = np.zeros(hidden_dim)
+        self.params['W3'] = np.random.randn(hidden_dim,
+                                            num_classes) * weight_scale
+        self.params['b3'] = np.zeros(num_classes)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -101,8 +110,14 @@ class ThreeLayerConvNet(object):
         # cs231n/layer_utils.py in your implementation (already imported).         #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-        pass
+        N = len(X)
+        scores = X
+        scores, conv_cache = conv_relu_pool_forward(scores, W1, b1, conv_param,
+                                                    pool_param)
+        _, conv_out_channel, conv_out_height, conv_out_width = scores.shape
+        scores = scores.reshape(N, -1)
+        scores, fc1_cache = affine_relu_forward(scores, W2, b2)
+        scores, fc2_cache = affine_forward(scores, W3, b3)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -124,8 +139,20 @@ class ThreeLayerConvNet(object):
         # of 0.5 to simplify the expression for the gradient.                      #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        loss, dout = softmax_loss(scores, y)
 
-        pass
+        dout, dW3, db3 = affine_backward(dout, fc2_cache)
+        dout, dW2, db2 = affine_relu_backward(dout, fc1_cache)
+        dout = dout.reshape(N, conv_out_channel, conv_out_height,
+                            conv_out_width)
+        _, dW1, db1 = conv_relu_pool_backward(dout, conv_cache)
+
+        grads['W1'] = dW1
+        grads['b1'] = db1
+        grads['W2'] = dW2
+        grads['b2'] = db2
+        grads['W3'] = dW3
+        grads['b3'] = db3
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
