@@ -147,6 +147,14 @@ class ThreeLayerConvNet(object):
                             conv_out_width)
         _, dW1, db1 = conv_relu_pool_backward(dout, conv_cache)
 
+        # add regularization
+        loss += 0.5 * self.reg * (np.sum(W1**2) + np.sum(W2**2) +
+                                  np.sum(W3**2))
+
+        dW1 += self.reg * W1
+        dW2 += self.reg * W2
+        dW3 += self.reg * W3
+
         grads['W1'] = dW1
         grads['b1'] = db1
         grads['W2'] = dW2
