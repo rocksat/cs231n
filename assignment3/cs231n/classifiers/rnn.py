@@ -245,7 +245,22 @@ class CaptioningRNN(object):
         ###########################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        prev_h, _ = affine_forward(features, W_proj, b_proj)
+        prev_x = self._start * np.ones((N, 1), dtype=np.int64)
+
+        for t in range(max_length):
+            # process x
+            x, _ = word_embedding_forward(prev_x, W_embed)
+            x = np.squeeze(x)
+            next_h, _ = rnn_step_forward(x, prev_h, Wx, Wh, b)
+            prob_y, _ = affine_forward(next_h, W_vocab, b_vocab)
+            next_x = np.argmax(prob_y, axis=1)
+            prev_x = next_x[:, np.newaxis].astype(np.int64)
+            prev_h = next_h
+
+            # save
+            captions[:, t] = next_x
+
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
