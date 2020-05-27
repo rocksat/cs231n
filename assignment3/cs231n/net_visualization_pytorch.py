@@ -89,8 +89,7 @@ def make_fooling_image(X, target_y, model):
 
         scores[:, target_y].backward()
         with torch.no_grad():
-            dX = learning_rate * X_fooling.grad.data / torch.norm(
-                X_fooling.grad.data)
+            dX = learning_rate * X_fooling.grad / torch.norm(X_fooling.grad)
             X_fooling += dX
             X_fooling.grad.zero_()
 
@@ -112,7 +111,13 @@ def class_visualization_update_step(img, model, target_y, l2_reg,
     ########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    scores = model(img)
+    loss = scores[0, target_y] - l2_reg * torch.norm(img)
+    loss.backward()
+    with torch.no_grad():
+        dimg = learning_rate * img.grad / torch.norm(img.grad)
+        img += dimg
+        img.grad.zero_()
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ########################################################################
