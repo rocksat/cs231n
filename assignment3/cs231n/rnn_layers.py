@@ -111,7 +111,19 @@ def rnn_forward(x, h0, Wx, Wh, b):
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    N, T, D = x.shape
+    H = h0.shape[1]
+    h = np.zeros((N, T, H))
+    cache = []
+
+    prev_h = h0
+
+    for t in range(T):
+        next_h, next_cache = rnn_step_forward(x[:, t, :], prev_h, Wx, Wh, b)
+        prev_h = next_h
+        # save output
+        h[:, t, :] = next_h
+        cache.append(next_cache)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
@@ -147,7 +159,25 @@ def rnn_backward(dh, cache):
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    N, T, H = dh.shape
+    dx = []
+    dWx, dWh, db = 0, 0, 0
+    dprev_h = 0
+
+    for t in range(T - 1, -1, -1):
+        dnext_h = dh[:, t, :] + dprev_h
+        dcurr_x, dprev_h, dcurr_Wx, dcurr_Wh, dcurr_b = rnn_step_backward(
+            dnext_h, cache[t])
+
+        # process gradient
+        dx.append(dcurr_x[:, np.newaxis, :])
+        dWx += dcurr_Wx
+        dWh += dcurr_Wh
+        db += dcurr_b
+
+        if t == 0:
+            dh0 = dprev_h
+    dx = np.concatenate(dx[::-1], axis=1)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
