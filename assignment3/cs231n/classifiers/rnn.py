@@ -17,15 +17,14 @@ class CaptioningRNN(object):
 
     Note that we don't use any regularization for the CaptioningRNN.
     """
-
     def __init__(
-        self,
-        word_to_idx,
-        input_dim=512,
-        wordvec_dim=128,
-        hidden_dim=128,
-        cell_type="rnn",
-        dtype=np.float32,
+            self,
+            word_to_idx,
+            input_dim=512,
+            wordvec_dim=128,
+            hidden_dim=128,
+            cell_type="rnn",
+            dtype=np.float32,
     ):
         """
         Construct a new CaptioningRNN instance.
@@ -151,7 +150,34 @@ class CaptioningRNN(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        h0, h0_cache = affine_forward(features, W_proj, b_proj)
+        x, x_cache = word_embedding_forward(captions_in, W_embed)
+
+        if self.cell_type == 'rnn':
+            h, h_cache = rnn_forward(x, h0, Wx, Wh, b)
+        elif self.cell_type == 'lstm':
+            pass
+        else:
+            raise ValueError('Invalid cell_type "%s"' % self.cell_type)
+
+        pred, pred_cache = temporal_affine_forward(h, W_vocab, b_vocab)
+        loss, dpred = temporal_softmax_loss(pred, captions_out, mask)
+
+        dh, dW_vocab, db_vocab = temporal_affine_backward(dpred, pred_cache)
+        dx, dh0, dWx, dWh, db = rnn_backward(dh, h_cache)
+        dW_embed = word_embedding_backward(dx, x_cache)
+        _, dW_proj, db_proj = affine_backward(dh0, h0_cache)
+
+        grads = {
+            "W_proj": dW_proj,
+            "b_proj": db_proj,
+            "W_embed": dW_embed,
+            "Wx": dWx,
+            "Wh": dWh,
+            "b": db,
+            "W_vocab": dW_vocab,
+            "b_vocab": db_vocab
+        }
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
