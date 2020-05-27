@@ -1,8 +1,6 @@
 from __future__ import print_function, division
 from builtins import range
 import numpy as np
-
-
 """
 This file defines layer types that are commonly used for recurrent neural
 networks.
@@ -36,7 +34,9 @@ def rnn_step_forward(x, prev_h, Wx, Wh, b):
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    next_a = np.matmul(x, Wx) + np.matmul(prev_h, Wh) + b
+    next_h = np.tanh(next_a)
+    cache = (x, prev_h, Wx, Wh, b, next_a, next_h)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
@@ -69,7 +69,14 @@ def rnn_step_backward(dnext_h, cache):
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    x, prev_h, Wx, Wh, b, next_a, next_h = cache
+
+    dnext_a = dnext_h * (1 - next_h**2)
+    db = np.sum(dnext_a, axis=0)
+    dWh = np.matmul(prev_h.T, dnext_a)
+    dprev_h = np.matmul(dnext_a, Wh.T)
+    dWx = np.matmul(x.T, dnext_a)
+    dx = np.matmul(dnext_a, Wx.T)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
