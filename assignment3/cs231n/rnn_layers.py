@@ -209,7 +209,17 @@ def word_embedding_forward(x, W):
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    # convert x to one-hot vector with size [N, T, V]
+    N, T = x.shape
+    V, D = W.shape
+    one_hot_x = np.zeros((N, T, V))
+
+    for n in range(N):
+        for t in range(T):
+            one_hot_x[n, t, x[n, t]] = 1
+
+    out = np.matmul(one_hot_x, W)
+    cache = (one_hot_x, W)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
@@ -242,7 +252,13 @@ def word_embedding_backward(dout, cache):
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    one_hot_x, w = cache
+    D = dout.shape[-1]
+    V = one_hot_x.shape[-1]
+
+    one_hot_x = one_hot_x.reshape(-1, V)
+    dout = dout.reshape(-1, D)
+    dW = np.matmul(one_hot_x.T, dout)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
