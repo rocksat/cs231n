@@ -419,7 +419,21 @@ def lstm_forward(x, h0, Wx, Wh, b):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    N, T, D = x.shape
+    H = h0.shape[1]
+    h = np.zeros((N, T, H))
+    cache = []
+
+    prev_h = h0
+    prev_c = np.zeros((N, H))
+    for t in range(T):
+        next_h, next_c, lstm_cache = lstm_step_forward(x[:, t, :], prev_h,
+                                                       prev_c, Wx, Wh, b)
+
+        h[:, t, :] = next_h
+        cache.append(lstm_cache)
+        prev_h = next_h
+        prev_c = next_c
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
@@ -451,7 +465,25 @@ def lstm_backward(dh, cache):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    N, T, H = dh.shape
+    dprev_c = np.zeros((N, H))
+    dprev_h, dWx, dWh, db = 0, 0, 0, 0
+    dx = []
+
+    for t in range(T - 1, -1, -1):
+        dnext_h = dh[:, t, :] + dprev_h
+        dnext_c = dprev_c
+        dprev_x, dprev_h, dprev_c, dprev_Wx, dprev_Wh, dprev_b = lstm_step_backward(
+            dnext_h, dnext_c, cache[t])
+        dWx += dprev_Wx
+        dWh += dprev_Wh
+        db += dprev_b
+        dx.append(dprev_x[:, np.newaxis, :])
+
+        if t == 0:
+            dh0 = dprev_h
+
+    dx = np.concatenate(dx[::-1], axis=1)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################

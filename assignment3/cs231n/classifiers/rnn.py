@@ -150,21 +150,25 @@ class CaptioningRNN(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        h0, h0_cache = affine_forward(features, W_proj, b_proj)
-        x, x_cache = word_embedding_forward(captions_in, W_embed)
-
         if self.cell_type == 'rnn':
-            h, h_cache = rnn_forward(x, h0, Wx, Wh, b)
+            forward_func = rnn_forward
+            backward_func = rnn_backward
         elif self.cell_type == 'lstm':
-            pass
+            forward_func = lstm_forward
+            backward_func = lstm_backward
         else:
             raise ValueError('Invalid cell_type "%s"' % self.cell_type)
 
+        # forward
+        h0, h0_cache = affine_forward(features, W_proj, b_proj)
+        x, x_cache = word_embedding_forward(captions_in, W_embed)
+        h, h_cache = forward_func(x, h0, Wx, Wh, b)
         pred, pred_cache = temporal_affine_forward(h, W_vocab, b_vocab)
         loss, dpred = temporal_softmax_loss(pred, captions_out, mask)
 
+        # backward
         dh, dW_vocab, db_vocab = temporal_affine_backward(dpred, pred_cache)
-        dx, dh0, dWx, dWh, db = rnn_backward(dh, h_cache)
+        dx, dh0, dWx, dWh, db = backward_func(dh, h_cache)
         dW_embed = word_embedding_backward(dx, x_cache)
         _, dW_proj, db_proj = affine_backward(dh0, h0_cache)
 
