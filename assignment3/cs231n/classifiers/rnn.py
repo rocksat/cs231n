@@ -248,15 +248,21 @@ class CaptioningRNN(object):
         # you are using an LSTM, initialize the first cell state to zeros.        #
         ###########################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
         prev_h, _ = affine_forward(features, W_proj, b_proj)
         prev_x = self._start * np.ones((N, 1), dtype=np.int64)
+        prev_c = np.zeros_like(prev_h)
 
         for t in range(max_length):
             # process x
             x, _ = word_embedding_forward(prev_x, W_embed)
             x = np.squeeze(x)
-            next_h, _ = rnn_step_forward(x, prev_h, Wx, Wh, b)
+            if self.cell_type == "rnn":
+                next_h, _ = rnn_step_forward(x, prev_h, Wx, Wh, b)
+            elif self.cell_type == 'lstm':
+                next_h, prev_c, _ = lstm_step_forward(x, prev_h, prev_c, Wx, Wh, b)
+            else:
+                raise ValueError('Invalid cell_type "%s"' % self.cell_type)
+
             prob_y, _ = affine_forward(next_h, W_vocab, b_vocab)
             next_x = np.argmax(prob_y, axis=1)
             prev_x = next_x[:, np.newaxis].astype(np.int64)
