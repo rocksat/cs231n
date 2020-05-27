@@ -81,7 +81,18 @@ def make_fooling_image(X, target_y, model):
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    while True:
+        scores = model(X_fooling)
+        _, pred_y = torch.max(scores, 1)
+        if pred_y == target_y:
+            break
+
+        scores[:, target_y].backward()
+        with torch.no_grad():
+            dX = learning_rate * X_fooling.grad.data / torch.norm(
+                X_fooling.grad.data)
+            X_fooling += dX
+            X_fooling.grad.zero_()
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
