@@ -24,7 +24,6 @@ def compute_saliency_maps(X, y, model):
     # Make input tensor require gradient
     X.requires_grad_()
 
-    saliency = None
     ##############################################################################
     # TODO: Implement this function. Perform a forward and backward pass through #
     # the model to compute the gradient of the correct class score with respect  #
@@ -34,7 +33,11 @@ def compute_saliency_maps(X, y, model):
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    score = model(X)
+    score_y = score.gather(-1, y.view(-1, 1)).squeeze()
+    score_y.backward(torch.ones_like(y, dtype=torch.float64))
+    grad_X = X.grad
+    saliency = torch.max(torch.abs(grad_X), dim=1)[0]
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
