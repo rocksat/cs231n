@@ -259,7 +259,8 @@ class CaptioningRNN(object):
             if self.cell_type == "rnn":
                 next_h, _ = rnn_step_forward(x, prev_h, Wx, Wh, b)
             elif self.cell_type == 'lstm':
-                next_h, prev_c, _ = lstm_step_forward(x, prev_h, prev_c, Wx, Wh, b)
+                next_h, prev_c, _ = lstm_step_forward(x, prev_h, prev_c, Wx,
+                                                      Wh, b)
             else:
                 raise ValueError('Invalid cell_type "%s"' % self.cell_type)
 
@@ -270,7 +271,6 @@ class CaptioningRNN(object):
 
             # save
             captions[:, t] = next_x
-
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
