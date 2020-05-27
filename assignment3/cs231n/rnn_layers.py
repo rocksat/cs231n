@@ -310,7 +310,23 @@ def lstm_step_forward(x, prev_h, prev_c, Wx, Wh, b):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    # step 1: forward
+    a = np.matmul(x, Wx) + np.matmul(prev_h, Wh) + b
+
+    # step 2: activation
+    ai, af, ao, ag = np.split(a, 4, axis=1)
+    i = sigmoid(ai)
+    f = sigmoid(af)
+    o = sigmoid(ao)
+    g = np.tanh(ag)
+
+    # step 3: update c
+    next_c = prev_c * f + i * g
+
+    # step 4: update h
+    next_h = o * np.tanh(next_c)
+
+    cache = (x, prev_h, prev_c, Wx, Wh, b, ai, af, ao, ag, i, f, o, g, next_c)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
@@ -346,7 +362,25 @@ def lstm_step_backward(dnext_h, dnext_c, cache):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    (x, prev_h, prev_c, Wx, Wh, b, ai, af, ao, ag, i, f, o, g, next_c) = cache
+
+    do = dnext_h * np.tanh(next_c)
+    dtanh_next_c = dnext_h * o
+    dnext_c = dnext_c + dtanh_next_c * (1 - np.tanh(next_c)**2)
+    di = dnext_c * g
+    dg = dnext_c * i
+    df = dnext_c * prev_c
+    dprev_c = dnext_c * f
+    dai = di * i * (1 - i)
+    daf = df * f * (1 - f)
+    dao = do * o * (1 - o)
+    dag = dg * (1 - g**2)
+    da = np.concatenate((dai, daf, dao, dag), axis=1)
+    db = np.sum(da, axis=0)
+    dWh = np.matmul(prev_h.T, da)
+    dprev_h = np.matmul(da, Wh.T)
+    dWx = np.matmul(x.T, da)
+    dx = np.matmul(da, Wx.T)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
