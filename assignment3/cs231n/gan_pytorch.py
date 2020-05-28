@@ -11,8 +11,9 @@ import PIL
 
 NOISE_DIM = 96
 
-dtype = torch.FloatTensor
-#dtype = torch.cuda.FloatTensor ## UNCOMMENT THIS LINE IF YOU'RE ON A GPU!
+#dtype = torch.FloatTensor
+dtype = torch.cuda.FloatTensor  ## UNCOMMENT THIS LINE IF YOU'RE ON A GPU!
+torch.set_default_tensor_type(dtype)
 
 
 def sample_noise(batch_size, dim, seed=None):
@@ -263,19 +264,13 @@ def build_dc_generator(noise_dim=NOISE_DIM):
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
     model = nn.Sequential(
-        nn.Linear(in_features=noise_dim, out_features=1024),
-        nn.ReLU(),
+        nn.Linear(in_features=noise_dim, out_features=1024), nn.ReLU(),
         nn.BatchNorm1d(num_features=1024),
-        nn.Linear(in_features=1024, out_features=7*7*128),
-        nn.ReLU(),
-        nn.BatchNorm1d(num_features=7*7*128),
-        Unflatten(C=128, W=7, H=7),
-        nn.ConvTranspose2d(128, 64, 4, stride=2, padding=1),
-        nn.ReLU(),
+        nn.Linear(in_features=1024, out_features=7 * 7 * 128), nn.ReLU(),
+        nn.BatchNorm1d(num_features=7 * 7 * 128), Unflatten(C=128, W=7, H=7),
+        nn.ConvTranspose2d(128, 64, 4, stride=2, padding=1), nn.ReLU(),
         nn.BatchNorm2d(num_features=64),
-        nn.ConvTranspose2d(64, 1, 4, stride=2, padding=1),
-        nn.Tanh()
-    )
+        nn.ConvTranspose2d(64, 1, 4, stride=2, padding=1), nn.Tanh())
     return model
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
