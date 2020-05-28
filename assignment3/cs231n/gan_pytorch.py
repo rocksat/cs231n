@@ -14,6 +14,7 @@ NOISE_DIM = 96
 dtype = torch.FloatTensor
 #dtype = torch.cuda.FloatTensor ## UNCOMMENT THIS LINE IF YOU'RE ON A GPU!
 
+
 def sample_noise(batch_size, dim, seed=None):
     """
     Generate a PyTorch Tensor of uniform random noise.
@@ -28,13 +29,14 @@ def sample_noise(batch_size, dim, seed=None):
     """
     if seed is not None:
         torch.manual_seed(seed)
-        
+
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    return torch.rand((batch_size, dim)) * 2 - 1
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-    
+
+
 def discriminator(seed=None):
     """
     Build and return a PyTorch model implementing the architecture above.
@@ -52,14 +54,20 @@ def discriminator(seed=None):
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    model = nn.Sequential(Flatten(),
+                          nn.Linear(in_features=784, out_features=256),
+                          nn.LeakyReLU(negative_slope=0.01),
+                          nn.Linear(in_features=256, out_features=256),
+                          nn.LeakyReLU(negative_slope=0.01),
+                          nn.Linear(in_features=256, out_features=1))
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
     return model
-    
+
+
 def generator(noise_dim=NOISE_DIM, seed=None):
     """
     Build and return a PyTorch model implementing the architecture above.
@@ -77,13 +85,19 @@ def generator(noise_dim=NOISE_DIM, seed=None):
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    model = nn.Sequential(nn.Linear(in_features=noise_dim, out_features=1024),
+                          nn.ReLU(),
+                          nn.Linear(in_features=1024, out_features=1024),
+                          nn.ReLU(),
+                          nn.Linear(in_features=1024, out_features=784),
+                          nn.Tanh(), Unflatten(C=1, H=28, W=28))
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
     return model
+
 
 def bce_loss(input, target):
     """
@@ -100,9 +114,10 @@ def bce_loss(input, target):
     Returns:
     - A PyTorch Tensor containing the mean BCE loss over the minibatch of input data.
     """
-    neg_abs = - input.abs()
+    neg_abs = -input.abs()
     loss = input.clamp(min=0) - input * target + (1 + neg_abs.exp()).log()
     return loss.mean()
+
 
 def discriminator_loss(logits_real, logits_fake):
     """
@@ -118,10 +133,13 @@ def discriminator_loss(logits_real, logits_fake):
     loss = None
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    loss = torch.mean(bce_loss(
+        logits_real, torch.ones_like(logits_real))) + torch.mean(
+            (bce_loss(logits_fake, torch.zeros_like(logits_fake))))
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     return loss
+
 
 def generator_loss(logits_fake):
     """
@@ -136,10 +154,11 @@ def generator_loss(logits_fake):
     loss = None
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    loss = torch.mean(bce_loss(logits_fake, torch.ones_like(logits_fake)))
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     return loss
+
 
 def get_optimizer(model):
     """
@@ -155,10 +174,11 @@ def get_optimizer(model):
     optimizer = None
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    optimizer = optim.Adam(model.parameters(), lr=1e-3, betas=(0.5, 0.999))
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     return optimizer
+
 
 def ls_discriminator_loss(scores_real, scores_fake):
     """
@@ -174,10 +194,12 @@ def ls_discriminator_loss(scores_real, scores_fake):
     loss = None
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    loss = 0.5 * torch.mean((scores_real - torch.ones_like(scores_real))**
+                            2) + 0.5 * torch.mean(scores_fake**2)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     return loss
+
 
 def ls_generator_loss(scores_fake):
     """
@@ -192,10 +214,11 @@ def ls_generator_loss(scores_fake):
     loss = None
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    loss = 0.5 * torch.mean((scores_fake - torch.ones_like(scores_fake))**2)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     return loss
+
 
 def build_dc_classifier(batch_size):
     """
@@ -210,7 +233,15 @@ def build_dc_classifier(batch_size):
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    model = nn.Sequential(nn.Conv2d(1, 32, 5,
+                                    1), nn.LeakyReLU(negative_slope=0.01),
+                          nn.MaxPool2d(2, 2), nn.Conv2d(32, 64, 5, 1),
+                          nn.LeakyReLU(negative_slope=0.01),
+                          nn.MaxPool2d(2, 2), Flatten(),
+                          nn.Linear(in_features=1024, out_features=1024),
+                          nn.LeakyReLU(negative_slope=0.01),
+                          nn.Linear(in_features=1024, out_features=1))
+    return model
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
@@ -231,15 +262,39 @@ def build_dc_generator(noise_dim=NOISE_DIM):
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    model = nn.Sequential(
+        nn.Linear(in_features=noise_dim, out_features=1024),
+        nn.ReLU(),
+        nn.BatchNorm1d(num_features=1024),
+        nn.Linear(in_features=1024, out_features=7*7*128),
+        nn.ReLU(),
+        nn.BatchNorm1d(num_features=7*7*128),
+        Unflatten(C=128, W=7, H=7),
+        nn.ConvTranspose2d(128, 64, 4, stride=2, padding=1),
+        nn.ReLU(),
+        nn.BatchNorm2d(num_features=64),
+        nn.ConvTranspose2d(64, 1, 4, stride=2, padding=1),
+        nn.Tanh()
+    )
+    return model
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
 
-def run_a_gan(D, G, D_solver, G_solver, discriminator_loss, generator_loss, loader_train, show_every=250, 
-              batch_size=128, noise_size=96, num_epochs=10):
+
+def run_a_gan(D,
+              G,
+              D_solver,
+              G_solver,
+              discriminator_loss,
+              generator_loss,
+              loader_train,
+              show_every=250,
+              batch_size=128,
+              noise_size=96,
+              num_epochs=10):
     """
     Train a GAN!
     
@@ -262,14 +317,14 @@ def run_a_gan(D, G, D_solver, G_solver, discriminator_loss, generator_loss, load
                 continue
             D_solver.zero_grad()
             real_data = x.type(dtype)
-            logits_real = D(2* (real_data - 0.5)).type(dtype)
+            logits_real = D(2 * (real_data - 0.5)).type(dtype)
 
             g_fake_seed = sample_noise(batch_size, noise_size).type(dtype)
             fake_images = G(g_fake_seed).detach()
             logits_fake = D(fake_images.view(batch_size, 1, 28, 28))
 
             d_total_error = discriminator_loss(logits_real, logits_fake)
-            d_total_error.backward()        
+            d_total_error.backward()
             D_solver.step()
 
             G_solver.zero_grad()
@@ -282,14 +337,14 @@ def run_a_gan(D, G, D_solver, G_solver, discriminator_loss, generator_loss, load
             G_solver.step()
 
             if (iter_count % show_every == 0):
-                print('Iter: {}, D: {:.4}, G:{:.4}'.format(iter_count,d_total_error.item(),g_error.item()))
+                print('Iter: {}, D: {:.4}, G:{:.4}'.format(
+                    iter_count, d_total_error.item(), g_error.item()))
                 imgs_numpy = fake_images.data.cpu().numpy()
                 images.append(imgs_numpy[0:16])
 
             iter_count += 1
-    
-    return images
 
+    return images
 
 
 class ChunkSampler(sampler.Sampler):
@@ -311,9 +366,12 @@ class ChunkSampler(sampler.Sampler):
 
 class Flatten(nn.Module):
     def forward(self, x):
-        N, C, H, W = x.size() # read in N, C, H, W
-        return x.view(N, -1)  # "flatten" the C * H * W values into a single vector per image
-    
+        N, C, H, W = x.size()  # read in N, C, H, W
+        return x.view(
+            N, -1
+        )  # "flatten" the C * H * W values into a single vector per image
+
+
 class Unflatten(nn.Module):
     """
     An Unflatten module receives an input of shape (N, C*H*W) and reshapes it
@@ -325,21 +383,27 @@ class Unflatten(nn.Module):
         self.C = C
         self.H = H
         self.W = W
+
     def forward(self, x):
         return x.view(self.N, self.C, self.H, self.W)
+
 
 def initialize_weights(m):
     if isinstance(m, nn.Linear) or isinstance(m, nn.ConvTranspose2d):
         nn.init.xavier_uniform_(m.weight.data)
 
+
 def preprocess_img(x):
     return 2 * x - 1.0
+
 
 def deprocess_img(x):
     return (x + 1.0) / 2.0
 
-def rel_error(x,y):
+
+def rel_error(x, y):
     return np.max(np.abs(x - y) / (np.maximum(1e-8, np.abs(x) + np.abs(y))))
+
 
 def count_params(model):
     """Count the number of parameters in the current TensorFlow graph """
