@@ -9,6 +9,8 @@ import numpy as np
 from .image_utils import SQUEEZENET_MEAN, SQUEEZENET_STD
 
 dtype = torch.FloatTensor
+
+
 # Uncomment out the following line if you're on a machine with a GPU set up for PyTorch!
 #dtype = torch.cuda.FloatTensor
 def content_loss(content_weight, content_current, content_original):
@@ -25,10 +27,10 @@ def content_loss(content_weight, content_current, content_original):
     - scalar content loss
     """
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-    pass
+    return content_weight * torch.sum((content_current - content_original)**2)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+
 
 def gram_matrix(features, normalize=True):
     """
@@ -45,10 +47,15 @@ def gram_matrix(features, normalize=True):
       (optionally normalized) Gram matrices for the N input images.
     """
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-    pass
-
+    N, C, H, W = features.shape
+    flatten_features = features.view(N, C, H * W)
+    transposed_flatten_features = torch.transpose(flatten_features, 1, 2)
+    gram = torch.bmm(flatten_features, transposed_flatten_features)
+    if normalize:
+        gram /= (H * W * C)
+    return gram
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+
 
 # Now put it together in the style_loss function...
 def style_loss(feats, style_layers, style_targets, style_weights):
@@ -73,9 +80,16 @@ def style_loss(feats, style_layers, style_targets, style_weights):
     # not be very much code (~5 lines). You will need to use your gram_matrix function.
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    loss = 0
+    for i, layer in enumerate(style_layers):
+        curr_feat = feats[layer]
+        curr_gram = gram_matrix(curr_feat)
+        target_gram = style_targets[i]
+        loss += style_weights[i] * torch.sum((curr_gram - target_gram)**2)
+    return loss
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+
 
 def tv_loss(img, tv_weight):
     """
@@ -92,7 +106,10 @@ def tv_loss(img, tv_weight):
     # Your implementation should be vectorized and not require any loops!
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    return tv_weight * (torch.sum(
+        (img[:, :, :-1, :] - img[:, :, 1:, :])**2) + torch.sum(
+            (img[:, :, :, :-1] - img[:, :, :, 1:])**2))
+
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 def preprocess(img, size=512):
@@ -115,6 +132,7 @@ def preprocess(img, size=512):
     ])
     return transform(img)
 
+
 def deprocess(img):
     """ De-processes a Pytorch tensor from the output of the CNN model to become
         a PIL JPG Image that we can display, save, etc.
@@ -133,12 +151,15 @@ def deprocess(img):
     """
     transform = T.Compose([
         T.Lambda(lambda x: x[0]),
-        T.Normalize(mean=[0, 0, 0], std=[1.0 / s for s in SQUEEZENET_STD.tolist()]),
-        T.Normalize(mean=[-m for m in SQUEEZENET_MEAN.tolist()], std=[1, 1, 1]),
+        T.Normalize(mean=[0, 0, 0],
+                    std=[1.0 / s for s in SQUEEZENET_STD.tolist()]),
+        T.Normalize(mean=[-m for m in SQUEEZENET_MEAN.tolist()], std=[1, 1,
+                                                                      1]),
         T.Lambda(rescale),
         T.ToPILImage(),
     ])
     return transform(img)
+
 
 def rescale(x):
     """ A function used internally inside `deprocess`.
@@ -150,8 +171,10 @@ def rescale(x):
     x_rescaled = (x - low) / (high - low)
     return x_rescaled
 
-def rel_error(x,y):
+
+def rel_error(x, y):
     return np.max(np.abs(x - y) / (np.maximum(1e-8, np.abs(x) + np.abs(y))))
+
 
 # We provide this helper code which takes an image, a model (cnn), and returns a list of
 # feature maps, one per layer.
@@ -178,12 +201,9 @@ def extract_features(x, cnn):
         prev_feat = next_feat
     return features
 
+
 #please disregard warnings about initialization
 def features_from_img(imgpath, imgsize, cnn):
     img = preprocess(PIL.Image.open(imgpath), size=imgsize)
     img_var = img.type(dtype)
     return extract_features(img_var, cnn), img_var
-
-
-
-
