@@ -11,9 +11,9 @@ import PIL
 
 NOISE_DIM = 96
 
-#dtype = torch.FloatTensor
-dtype = torch.cuda.FloatTensor  ## UNCOMMENT THIS LINE IF YOU'RE ON A GPU!
-torch.set_default_tensor_type(dtype)
+dtype = torch.FloatTensor
+# dtype = torch.cuda.FloatTensor  ## UNCOMMENT THIS LINE IF YOU'RE ON A GPU!
+# torch.set_default_tensor_type(dtype)
 
 
 def sample_noise(batch_size, dim, seed=None):
